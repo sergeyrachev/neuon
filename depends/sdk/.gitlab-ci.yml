@@ -1,0 +1,69 @@
+.prereq: &prereq
+  - |
+    if [[ ! -d prereq ]]; then
+      mkdir -p prereq/tools
+      mkdir -p prereq/deps
+    fi
+
+stages:
+  - environment
+  - prereq
+  - build
+
+env-arch:
+  stage: environment
+  image: docker:19.03.1
+  services:
+    - docker:19.03.1-dind
+  tags:
+    - docker
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - |
+      docker build -t $CI_REGISTRY_IMAGE/build-arch:latest -f ci/build.arch.Dockerfile ci
+      docker push $CI_REGISTRY_IMAGE/build-arch:latest
+
+prereq-arch:
+  image: $CI_REGISTRY_IMAGE/build-arch:latest
+  stage: prereq
+  needs:
+    - env-arch
+  tags:
+    - docker
+  cache:
+    key: prereq.arch
+    paths:
+      - prereq/tools
+      - prereq/deps
+  script:
+    - *prereq
+  artifacts:
+    paths:
+      - prereq/tools
+      - prereq/deps
+    expire_in: 2 hour
+
+build-arch-latest:
+  stage: build
+  needs:
+    - prereq-arch
+  tags:
+    - docker
+  image: $CI_REGISTRY_IMAGE/build-arch:latest
+  before_script:
+    - |
+      export TAG=$(git describe --tags --abbrev=0)
+      export REVISION=$(git describe --always --long)
+      export TAG=${TAG:-0.0.0}
+      export REVISION=${REVISION:-00000000}
+      echo $TAG > TAG
+      echo $REVISION > REVISION
+      mkdir build.arch
+  script:
+    - |
+      pushd build.arch
+      cmake  -DCMAKE_BUILD_TYPE=Release -Dversion=${TAG} -Drevision=${REVISION} ..
+      cmake --build . -- -j8
+      ctest .
+      popd

@@ -1,0 +1,47 @@
+import setuptools
+
+name = "neuon-gym"
+version = "@version_revision@"
+where = "@NEUON_PACKAGE_LOCATION@"
+description = ""
+
+setuptools.setup(
+    name=name,
+    version=version,
+    author="Sergey Rachev",
+    author_email="sergey.rachev@gmail.com",
+    description=description,
+    long_description="",
+    long_description_content_type="text/markdown",
+    url="https://example.com",
+    package_dir={'': where},
+    packages=setuptools.find_namespace_packages(where=where),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: Other/Proprietary License",
+        "Operating System :: OS Independent",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+        "Topic :: Software Development :: Libraries"
+    ],
+    setup_requires=['wheel'],
+    install_requires=[
+        'Keras',
+        'h5py',
+        'imageio',
+        'matplotlib',
+        'numpy',
+        'pandas',
+        'pydot',
+        'pyparsing',
+        'tensorflow',
+        'neuon-details'
+    ],
+    entry_points={
+        'console_scripts': [
+            'neuon-train=neuon.gym.train:main',
+            'neuon-export=neuon.gym.export:main'
+        ]
+    }
+)
+
+

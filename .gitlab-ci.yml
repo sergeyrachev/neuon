@@ -1,0 +1,414 @@
+.dependencies: &dependencies
+  - |
+    if [[ ! -f prereq/deps/depends.marker ]]; then
+      mkdir -p prereq/deps
+      pushd prereq
+
+      git clone https://github.com/davisking/dlib.git
+      cmake -DCMAKE_POSITION_INDEPENDENT_CODE=On -DCMAKE_INSTALL_PREFIX=/opt/neuon -DCMAKE_BUILD_TYPE=Release -DUSE_SSE2_INSTRUCTIONS=1 -DUSE_SSE4_INSTRUCTIONS=1 -DUSE_AVX_INSTRUCTIONS=1 -DDLIB_NO_GUI_SUPPORT=1 -Sdlib -Bdlib.build
+      cmake --build dlib.build --target install -- DESTDIR=$PWD/deps -j8
+
+      git clone https://github.com/google/googletest.git
+      cmake -DCMAKE_POSITION_INDEPENDENT_CODE=On -DCMAKE_INSTALL_PREFIX=/opt/neuon -DCMAKE_BUILD_TYPE=Release -Sgoogletest -Bgoogletest.build
+      cmake --build googletest.build --target install -- DESTDIR=$PWD/deps -j8
+
+      git clone https://github.com/sergeyrachev/aquila.git -b mfec
+      cmake -DCMAKE_POSITION_INDEPENDENT_CODE=On -DCMAKE_INSTALL_PREFIX=/opt/neuon -DCMAKE_BUILD_TYPE=Release -Saquila -Baquila.build
+      cmake --build aquila.build --target install -- DESTDIR=$PWD/deps -j8
+
+      git clone https://github.com/gabime/spdlog.git
+      cmake -DCMAKE_POSITION_INDEPENDENT_CODE=On -DCMAKE_INSTALL_PREFIX=/opt/neuon -DCMAKE_BUILD_TYPE=Release -Sspdlog -Bspdlog.build
+      cmake --build spdlog.build --target install -- DESTDIR=$PWD/deps -j8
+
+      touch deps/depends.marker
+      popd
+    fi
+
+.prereq: &prereq
+  - |
+    if [[ ! -f prereq/tools/cmake.marker ]]; then
+      mkdir -p prereq/tools
+      pushd prereq
+
+      wget -P ./ https://github.com/Kitware/CMake/releases/download/v3.16.2/cmake-3.16.2-Linux-x86_64.tar.gz
+      tar -C ./tools --strip-component=1 -xzf ./cmake-3.16.2-Linux-x86_64.tar.gz
+      touch tools/cmake.marker
+
+      popd
+    fi
+
+    if [[ ! -f prereq/deps/tensorflow.marker ]]; then
+      mkdir -p prereq/deps/opt/neuon
+      pushd prereq
+
+      wget -P ./ https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-linux-x86_64-1.15.0.tar.gz
+      tar -C ./deps/opt/neuon -xzf ./libtensorflow-cpu-linux-x86_64-1.15.0.tar.gz
+      touch ./deps/tensorflow.marker
+
+      popd
+    fi
+
+    if [[ ! -f prereq/deps/boost.marker ]]; then
+      mkdir -p prereq/deps
+      pushd prereq
+
+      wget -P ./ https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.gz
+      tar -C ./ -xzf ./boost_1_72_0.tar.gz
+
+      pushd ./boost_1_72_0 && ./bootstrap.sh && popd
+      pushd ./boost_1_72_0 && ./b2 -j8 -d0 --build-type=minimal --build-dir=boost.build/ --prefix=../deps/opt/neuon/ --without-python link=shared threading=multi variant=release runtime-link=shared architecture=x86 address-model=64 install && popd
+
+      touch ./deps/boost.marker
+
+      popd
+    fi
+
+    if [[ ! -d prereq/build.env ]]; then
+      mkdir -p prereq
+      pushd prereq
+
+      python3 -m venv ./build.env
+      . ./build.env/bin/activate && python3 -m pip install --upgrade setuptools wheel
+
+      popd
+    fi
+
+stages:
+  - environment
+  - prereq
+  - build
+  - build-demo
+  - test
+
+env-arch:
+  stage: environment
+  image: docker:19.03.1
+  services:
+    - docker:19.03.1-dind
+  tags:
+    - docker
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - |
+      docker build -t $CI_REGISTRY_IMAGE/build-arch:latest -f ci/build.arch.Dockerfile ci
+      docker push $CI_REGISTRY_IMAGE/build-arch:latest
+  only:
+    changes:
+      - ci/build.arch.Dockerfile
+
+env-centos-8:
+  stage: environment
+  image: docker:19.03.1
+  services:
+    - docker:19.03.1-dind
+  tags:
+    - docker
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - |
+      docker build -t $CI_REGISTRY_IMAGE/build-centos-8:latest -f ci/build.centos-8.Dockerfile ci
+      docker push $CI_REGISTRY_IMAGE/build-centos-8:latest
+  only:
+    changes:
+      - ci/build.centos-8.Dockerfile
+
+env-ubuntu-18:
+  stage: environment
+  image: docker:19.03.1
+  services:
+    - docker:19.03.1-dind
+  tags:
+    - docker
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - |
+      docker build -t $CI_REGISTRY_IMAGE/build-ubuntu-18:latest -f ci/build.ubuntu-18.Dockerfile ci
+      docker push $CI_REGISTRY_IMAGE/build-ubuntu-18:latest
+  only:
+    changes:
+      - ci/build.ubuntu-18.Dockerfile
+
+prereq-centos-8:
+  image: $CI_REGISTRY_IMAGE/build-centos-8:latest
+  stage: prereq
+  tags:
+    - docker
+  cache:
+    key: prereq.centos.8
+    paths:
+      - prereq/tools
+      - prereq/deps
+      - prereq/build.env
+  script:
+    - *prereq
+    - export PATH="${PWD}/prereq/tools/bin:${PATH}"
+    - *dependencies
+  artifacts:
+    paths:
+      - prereq/tools
+      - prereq/deps
+      - prereq/build.env
+    expire_in: 2 hour
+  dependencies:
+    - env-centos-8
+  variables:
+    GIT_STRATEGY: none
+
+prereq-ubuntu-18:
+  image: $CI_REGISTRY_IMAGE/build-ubuntu-18:latest
+  stage: prereq
+  tags:
+    - docker
+  cache:
+    key: prereq.ubuntu.18
+    paths:
+      - prereq/tools
+      - prereq/deps
+      - prereq/build.env
+  script:
+    - *prereq
+    - export PATH="${PWD}/prereq/tools/bin:${PATH}"
+    - *dependencies
+  artifacts:
+    paths:
+      - prereq/tools
+      - prereq/deps
+      - prereq/build.env
+    expire_in: 2 hour
+  dependencies:
+    - env-ubuntu-18
+  variables:
+    GIT_STRATEGY: none
+
+build-arch-latest:
+  stage: build
+  tags:
+    - docker
+  image: $CI_REGISTRY_IMAGE/build-arch:latest
+  dependencies:
+    - env-arch
+  cache:
+    key: prereq.arch
+    paths:
+      - prereq/deps
+  before_script:
+    - *dependencies
+    - |
+      export TAG=$(git describe --tags --abbrev=0)
+      export REVISION=$(git rev-parse --short HEAD)
+      export TWEAK=$(git rev-list --count ${TAG}.. )
+      export TAG=${TAG:-0.0.0}.${TWEAK:-0}
+      export REVISION=${REVISION:-00000000}
+      echo $TAG > TAG
+      echo $REVISION > REVISION
+      mkdir build.arch
+  script:
+    - |
+      cmake -DNEUON_PREFIX_PATH=${PWD}/prereq/deps/opt/neuon -DCMAKE_POSITION_INDEPENDENT_CODE=On -DCMAKE_PREFIX_PATH=${PWD}/prereq/deps/opt/neuon -DCMAKE_INSTALL_PREFIX=/opt/neuon -DCPACK_SET_DESTDIR=On -DCMAKE_BUILD_TYPE=Release -Dversion=${TAG} -Drevision=${REVISION} -S. -Bbuild.arch
+      cmake --build build.arch -- -j8
+      pushd build.arch
+      cpack -G "TGZ;ZIP"
+      popd
+  artifacts:
+    name: neuon-${CI_COMMIT_REF_SLUG}+g${CI_COMMIT_SHORT_SHA}-arch
+    paths:
+      - build.arch/sources/*.whl
+      - build.arch/examples/arch.Dockerfile
+      - build.arch/*.tar.gz
+      - build.arch/*.zip
+      - TAG
+      - REVISION
+    expire_in: 2 hours
+
+build-centos-8:
+  image: $CI_REGISTRY_IMAGE/build-centos-8:latest
+  stage: build
+  tags:
+    - docker
+  needs:
+    - prereq-centos-8
+  before_script:
+    - |
+      export TAG=$(git describe --tags --abbrev=0)
+      export REVISION=$(git rev-parse --short HEAD)
+      export TWEAK=$(git rev-list --count ${TAG}.. )
+      export TAG=${TAG:-0.0.0}.${TWEAK:-0}
+      export REVISION=${REVISION:-00000000}
+      export PATH=$PWD/prereq/tools/bin:$PATH
+      . ./prereq/build.env/bin/activate
+      mkdir build.centos.8
+  script:
+    - |
+      cmake -DNEUON_PREFIX_PATH=${PWD}/prereq/deps/opt/neuon -DCMAKE_POSITION_INDEPENDENT_CODE=On -DCMAKE_PREFIX_PATH=${PWD}/prereq/deps/opt/neuon -DCMAKE_INSTALL_PREFIX=/opt/neuon -DCMAKE_INSTALL_LIBDIR=lib -DCPACK_SET_DESTDIR=On -DCPACK_RPM_PACKAGE_RELOCATABLE=Off -DCMAKE_BUILD_TYPE=Release -Dversion=${TAG} -Drevision=${REVISION} -S. -Bbuild.centos.8
+      cmake --build build.centos.8 -- -j8
+      pushd build.centos.8
+      cpack --verbose -G RPM
+      popd
+  artifacts:
+    name: neuon-${CI_COMMIT_REF_SLUG}+g${CI_COMMIT_SHORT_SHA}-centos-8
+    paths:
+      - build.centos.8/source/*.whl
+      - build.centos.8/examples/centos-8.Dockerfile
+      - build.centos.8/*.rpm
+    expire_in: 2 hours
+
+build-ubuntu-18:
+  image: $CI_REGISTRY_IMAGE/build-ubuntu-18:latest
+  stage: build
+  tags:
+    - docker
+  needs:
+    - prereq-ubuntu-18
+  before_script:
+    - |
+      export TAG=$(git describe --tags --abbrev=0)
+      export REVISION=$(git rev-parse --short HEAD)
+      export TWEAK=$(git rev-list --count ${TAG}.. )
+      export TAG=${TAG:-0.0.0}.${TWEAK:-0}
+      export REVISION=${REVISION:-00000000}
+      export PATH=$PWD/prereq/tools/bin:$PATH
+      . ./prereq/build.env/bin/activate
+      mkdir build.ubuntu.18/
+  script:
+    - |
+      cmake -DNEUON_PREFIX_PATH=${PWD}/prereq/deps/opt/neuon -DCMAKE_POSITION_INDEPENDENT_CODE=On -DCMAKE_PREFIX_PATH=${PWD}/prereq/deps/opt/neuon -DCMAKE_INSTALL_PREFIX=/opt/neuon -DCPACK_SET_DESTDIR=On -DCMAKE_BUILD_TYPE=Release -Dversion=${TAG} -Drevision=${REVISION} -S. -Bbuild.ubuntu.18
+      cmake --build build.ubuntu.18 -- -j8
+      pushd build.ubuntu.18
+      cpack --verbose -G DEB
+      popd
+  artifacts:
+    name: neuon-${CI_COMMIT_REF_SLUG}+g${CI_COMMIT_SHORT_SHA}-ubuntu-18
+    paths:
+      - build.ubuntu.18/sources/*.whl
+      - build.ubuntu.18/examples/ubuntu-18.Dockerfile
+      - build.ubuntu.18/*.deb
+    expire_in: 2 hours
+
+build-demo-image:
+  stage: build-demo
+  needs:
+    - build-arch-latest
+    - build-centos-8
+    - build-ubuntu-18
+  tags:
+    - docker
+  image: docker:19.03.1
+  services:
+    - docker:19.03.1-dind
+  variables:
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: "/certs"
+    GIT_STRATEGY: none
+  before_script:
+    - |
+      export TAG=$(cat TAG)
+      export REVISION=$(cat REVISION)
+      docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - |
+      docker build -t $CI_REGISTRY_IMAGE/demo-arch:${TAG} -t $CI_REGISTRY_IMAGE/demo-arch:latest -f build.arch/examples/arch.Dockerfile build.arch
+      docker push $CI_REGISTRY_IMAGE/demo-arch:${TAG}
+      docker push $CI_REGISTRY_IMAGE/demo-arch:latest
+
+      docker build -t $CI_REGISTRY_IMAGE/demo-centos-8:${TAG} -t $CI_REGISTRY_IMAGE/demo-centos-8:latest -f build.centos.8/examples/centos-8.Dockerfile build.centos.8
+      docker push $CI_REGISTRY_IMAGE/demo-centos-8:${TAG}
+      docker push $CI_REGISTRY_IMAGE/demo-centos-8:latest
+
+      docker build -t $CI_REGISTRY_IMAGE/demo-ubuntu-18:${TAG} -t $CI_REGISTRY_IMAGE/demo-ubuntu-18:latest -f build.ubuntu.18/examples/ubuntu-18.Dockerfile build.ubuntu.18
+      docker push $CI_REGISTRY_IMAGE/demo-ubuntu-18:${TAG}
+      docker push $CI_REGISTRY_IMAGE/demo-ubuntu-18:latest
+
+  artifacts:
+    name: neuon-${CI_COMMIT_REF_SLUG}+g${CI_COMMIT_SHORT_SHA}-all
+    paths:
+      - build.*
+    expire_in: 2 weeks
+
+test-demo-image-ubuntu-18:
+  stage: test
+  dependencies:
+    - build-demo-image
+  tags:
+    - docker
+  image: docker:19.03.1
+  services:
+    - docker:19.03.1-dind
+  variables:
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: "/certs"
+    GIT_STRATEGY: none
+  before_script:
+      - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - |
+      docker pull $CI_REGISTRY_IMAGE/demo-ubuntu-18:latest
+      docker run -t --rm $CI_REGISTRY_IMAGE/demo-ubuntu-18:latest /opt/neuon/share/neuon/examples/res/unsync.mp4
+
+test-demo-image-arch:
+  stage: test
+  dependencies:
+    - build-demo-image
+  tags:
+    - docker
+  image: docker:19.03.1
+  services:
+    - docker:19.03.1-dind
+  variables:
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: "/certs"
+    GIT_STRATEGY: none
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - |
+      docker pull $CI_REGISTRY_IMAGE/demo-arch:latest
+      docker run -t --rm $CI_REGISTRY_IMAGE/demo-arch:latest /opt/neuon/share/neuon/examples/res/unsync.mp4
+
+test-demo-image-centos-8:
+  stage: test
+  dependencies:
+    - build-demo-image
+  tags:
+    - docker
+  image: docker:19.03.1
+  services:
+    - docker:19.03.1-dind
+  variables:
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: "/certs"
+    GIT_STRATEGY: none
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - |
+      docker pull $CI_REGISTRY_IMAGE/demo-centos-8:latest
+      docker run -t --rm $CI_REGISTRY_IMAGE/demo-centos-8:latest /opt/neuon/share/neuon/examples/res/unsync.mp4
+
+.build-win:
+  stage: build
+  tags:
+    - windows
+  before_script:
+    - |
+      conan remote add bincrafters "https://api.bintray.com/conan/bincrafters/public-conan"
+  script:
+    - |
+      mkdir __build
+      cd __build
+      conan install .. --build missing
+      TAG=$(git describe --tags --abbrev=0)
+      REVISION=$(git describe --always --long)
+      cmake -DNEUON_ISOLATED_BUILD=ON -G "Visual Studio 16 2019" -A x64 -T host=x64 -DCMAKE_BUILD_TYPE=Release -DUSE_SSE2_INSTRUCTIONS=1 -DUSE_SSE4_INSTRUCTIONS=1 -DUSE_AVX_INSTRUCTIONS=1 -DDLIB_NO_GUI_SUPPORT=1 -Dneuon_version=${TAG} -Dneuon_revision=${REVISION} ..
+      cmake --build --config Release .
+      cpack --verbose -G ZIP
+  artifacts:
+    paths:
+      - __build/*.whl
+      - __build/*.zip
+    expire_in: 1 week
+  except:
+    - /.*/
+

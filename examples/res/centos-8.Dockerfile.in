@@ -1,0 +1,28 @@
+FROM centos:8
+LABEL version="@version_revision@"
+
+RUN yum -y install epel-release
+RUN rpm -Uvh https://download1.rpmfusion.org/free/el/rpmfusion-free-release-8.noarch.rpm
+
+RUN yum -y install --enablerepo=PowerTools ffmpeg-devel ffmpeg-libs blas-devel lapack-devel
+RUN yum -y install --enablerepo=PowerTools cmake gcc make gcc gcc-c++
+
+COPY ./neuon-*-runtime.rpm /tmp/neuon/dist/
+COPY ./neuon-*-devel.rpm /tmp/neuon/dist/
+COPY ./neuon-*-sample.rpm /tmp/neuon/dist/
+
+RUN yum -y install /tmp/neuon/dist/*.rpm
+
+RUN useradd -m -g users -s /bin/bash user
+USER user
+
+WORKDIR /home/user
+RUN mkdir -p tmp/neuon.build
+WORKDIR /home/user/tmp/neuon.build
+RUN cmake -DCMAKE_PREFIX_PATH=@CMAKE_INSTALL_PREFIX@ -DCMAKE_INSTALL_PREFIX=/home/user/@CMAKE_INSTALL_PREFIX@ -DCMAKE_BUILD_TYPE=Release @CMAKE_INSTALL_PREFIX@/share/neuon/examples/
+RUN cmake --build . --target install -- -j8
+WORKDIR /home/user
+
+# run the application
+ENV LD_LIBRARY_PATH=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@
+ENTRYPOINT ["/home/user/@CMAKE_INSTALL_PREFIX@/bin/neuon-sample", "-m", "@CMAKE_INSTALL_PREFIX@/share/neuon/res/model.pb", "-l", "@CMAKE_INSTALL_PREFIX@/share/neuon/res/shape_predictor_68_face_landmarks.dat", "-n", "@CMAKE_INSTALL_PREFIX@/share/neuon/res/normale.json", "-i"]

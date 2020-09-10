@@ -1,0 +1,8 @@
+if (NOT DEFINED version)
+    set(version 0.0.0)
+endif ()
+if (NOT DEFINED revision)
+    set(revision 0000000)
+endif ()
+set(version_revision ${version}+g${revision})
+string(TIMESTAMP birthday UTC)

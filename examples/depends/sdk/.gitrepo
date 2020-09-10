@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:sergeyrachev/mementor.git
+	branch = master
+	commit = c2af9d1e9fb6737fa258cd97e7a9edb31a3ea6c4
+	parent = ce9a5e3719409a291272be9eedf1cc86212f635a
+	method = rebase
+	cmdver = 0.4.1
