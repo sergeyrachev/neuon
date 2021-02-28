@@ -1,12 +1,10 @@
 #include "demo.h"
 
-#include "birthday.h"
-
 #include <locale>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-common::demo_t::demo_t(uint32_t days) {
+common::demo_t::demo_t(std::string birthday, uint32_t days) {
 
     boost::posix_time::ptime the_day_of_birth;
     std::istringstream iss(birthday);

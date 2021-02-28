@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 
     std::string license_filename("neuon.key");
 
-    std::cout << "neuon-data :: " << version << " :: " << birthday << std::endl;
+    std::cout << "neuon-data :: " << neuon::version << " :: " << neuon::birthday << std::endl;
     namespace po = boost::program_options;
     po::options_description opt_desc( "Options" );
     opt_desc.add_options( )
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
 
     common::license_t license(license_payload);
     if(license.demo()){
-        common::demo_t demo;
+        common::demo_t demo(neuon::birthday);
         if(demo.has_expired){
             std::cerr << "Demo time period limit exceeded! Please contact the seller." << std::endl;
             return 1;

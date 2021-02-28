@@ -5,7 +5,10 @@ RUN yum -y install epel-release
 RUN rpm -Uvh https://download1.rpmfusion.org/free/el/rpmfusion-free-release-8.noarch.rpm
 
 RUN yum -y install --enablerepo=PowerTools ffmpeg-devel ffmpeg-libs blas-devel lapack-devel
-RUN yum -y install --enablerepo=PowerTools cmake gcc make gcc gcc-c++
+RUN yum -y install --enablerepo=PowerTools gcc make gcc gcc-c++ wget
+
+RUN wget -P /tmp https://github.com/Kitware/CMake/releases/download/v3.18.4/cmake-3.18.4-Linux-x86_64.tar.gz
+RUN tar -C /usr/local --strip-component=1 -xzf /tmp/cmake-3.18.4-Linux-x86_64.tar.gz
 
 COPY ./neuon-*-runtime.rpm /tmp/neuon/dist/
 COPY ./neuon-*-devel.rpm /tmp/neuon/dist/
@@ -19,8 +22,8 @@ USER user
 WORKDIR /home/user
 RUN mkdir -p tmp/neuon.build
 WORKDIR /home/user/tmp/neuon.build
-RUN cmake -DCMAKE_PREFIX_PATH=@CMAKE_INSTALL_PREFIX@ -DCMAKE_INSTALL_PREFIX=/home/user/@CMAKE_INSTALL_PREFIX@ -DCMAKE_BUILD_TYPE=Release @CMAKE_INSTALL_PREFIX@/share/neuon/examples/
-RUN cmake --build . --target install -- -j8
+RUN /usr/local/bin/cmake -DCMAKE_PREFIX_PATH=@CMAKE_INSTALL_PREFIX@ -DCMAKE_INSTALL_PREFIX=/home/user/@CMAKE_INSTALL_PREFIX@ -DCMAKE_BUILD_TYPE=Release @CMAKE_INSTALL_PREFIX@/share/neuon/examples/
+RUN /usr/local/bin/cmake --build . --target install -- -j8
 WORKDIR /home/user
 
 # run the application

@@ -8,6 +8,8 @@ RUN pacman --noconfirm -Syy ffmpeg
 RUN pacman --noconfirm -Syy boost
 RUN pacman --noconfirm -Syy python python-pip
 RUN pacman --noconfirm -Syy gtest gmock
+RUN pacman --noconfirm -Syy libffi
+RUN pacman --noconfirm -Syy spdlog
 
 RUN useradd -m -g users -s /bin/bash user
 USER user

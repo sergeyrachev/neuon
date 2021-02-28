@@ -95,10 +95,10 @@ if (jsoncpp_FOUND)
     else ()
         list(APPEND __jsoncpp_info_string "[]")
     endif ()
-    # part of the string to indicate if we found jsoncpp_lib_static
-    if (TARGET jsoncpp_lib_static)
+    # part of the string to indicate if we found jsoncpp_static
+    if (TARGET jsoncpp_static OR TARGET jsoncpp_lib_static)
         list(APPEND __jsoncpp_info_string "[T]")
-        _jsoncpp_apply_map_config(jsoncpp_lib_static)
+        _jsoncpp_apply_map_config(jsoncpp_static)
     else ()
         list(APPEND __jsoncpp_info_string "[]")
     endif ()
@@ -120,11 +120,15 @@ if (jsoncpp_FOUND AND NOT __jsoncpp_info_string STREQUAL "${JSONCPP_CACHED_JSONC
     # if(__jsoncpp_have_jsoncpplib) is equivalent to if(TARGET jsoncpp_lib) except it excludes our
     # "invented" jsoncpp_lib interface targets, made for convenience purposes after this block.
 
-    if (__jsoncpp_have_jsoncpplib AND TARGET jsoncpp_lib_static)
+    if (__jsoncpp_have_jsoncpplib AND (TARGET jsoncpp_static OR TARGET jsoncpp_lib_static) )
 
         # A veritable cache of riches - we have both shared and static!
         set(JSONCPP_IMPORTED_LIBRARY_SHARED jsoncpp_lib CACHE INTERNAL "" FORCE)
-        set(JSONCPP_IMPORTED_LIBRARY_STATIC jsoncpp_lib_static CACHE INTERNAL "" FORCE)
+        if(TARGET jsoncpp_static)
+            set(JSONCPP_IMPORTED_LIBRARY_STATIC jsoncpp_static CACHE INTERNAL "" FORCE)
+        else()
+            set(JSONCPP_IMPORTED_LIBRARY_STATIC jsoncpp_lib_static CACHE INTERNAL "" FORCE)
+        endif()
         if (WIN32 OR CYGWIN OR MINGW)
             # DLL platforms: static library should be default
             set(JSONCPP_IMPORTED_LIBRARY ${JSONCPP_IMPORTED_LIBRARY_STATIC} CACHE INTERNAL "" FORCE)
@@ -135,12 +139,16 @@ if (jsoncpp_FOUND AND NOT __jsoncpp_info_string STREQUAL "${JSONCPP_CACHED_JSONC
             set(JSONCPP_IMPORTED_LIBRARY_IS_SHARED TRUE CACHE INTERNAL "" FORCE)
         endif ()
 
+    elseif (TARGET jsoncpp_static )
+        # Well, only one variant, but we know for sure that it's static.
+        set(JSONCPP_IMPORTED_LIBRARY_STATIC jsoncpp_static CACHE INTERNAL "" FORCE)
+        set(JSONCPP_IMPORTED_LIBRARY jsoncpp_static CACHE INTERNAL "" FORCE)
+        set(JSONCPP_IMPORTED_LIBRARY_IS_SHARED FALSE CACHE INTERNAL "" FORCE)
     elseif (TARGET jsoncpp_lib_static)
         # Well, only one variant, but we know for sure that it's static.
         set(JSONCPP_IMPORTED_LIBRARY_STATIC jsoncpp_lib_static CACHE INTERNAL "" FORCE)
         set(JSONCPP_IMPORTED_LIBRARY jsoncpp_lib_static CACHE INTERNAL "" FORCE)
         set(JSONCPP_IMPORTED_LIBRARY_IS_SHARED FALSE CACHE INTERNAL "" FORCE)
-
     elseif (__jsoncpp_have_jsoncpplib AND __jsoncpp_lib_type STREQUAL "STATIC_LIBRARY")
         # We were able to figure out the mystery library is static!
         set(JSONCPP_IMPORTED_LIBRARY_STATIC jsoncpp_lib CACHE INTERNAL "" FORCE)
@@ -167,8 +175,12 @@ if (jsoncpp_FOUND AND NOT __jsoncpp_info_string STREQUAL "${JSONCPP_CACHED_JSONC
             set(JSONCPP_IMPORTED_INCLUDE_DIRS "${__jsoncpp_interface_include_dirs}" CACHE INTERNAL "" FORCE)
         endif ()
     endif ()
-    if (TARGET jsoncpp_lib_static AND NOT JSONCPP_IMPORTED_INCLUDE_DIRS)
-        get_property(__jsoncpp_interface_include_dirs TARGET jsoncpp_lib_static PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+    if ((TARGET jsoncpp_static OR TARGET jsoncpp_lib_static) AND NOT JSONCPP_IMPORTED_INCLUDE_DIRS)
+        if(TARGET jsoncpp_static)
+            get_property(__jsoncpp_interface_include_dirs TARGET jsoncpp_static PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+        else()
+            get_property(__jsoncpp_interface_include_dirs TARGET jsoncpp_lib_static PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+        endif()
         if (__jsoncpp_interface_include_dirs)
             set(JSONCPP_IMPORTED_INCLUDE_DIRS "${__jsoncpp_interface_include_dirs}" CACHE INTERNAL "" FORCE)
         endif ()
@@ -176,7 +188,10 @@ if (jsoncpp_FOUND AND NOT __jsoncpp_info_string STREQUAL "${JSONCPP_CACHED_JSONC
 endif ()
 
 # As a convenience...
-if (TARGET jsoncpp_lib_static AND NOT TARGET jsoncpp_lib)
+if (TARGET jsoncpp_static AND NOT TARGET jsoncpp_lib)
+    add_library(jsoncpp_lib INTERFACE)
+    target_link_libraries(jsoncpp_lib INTERFACE jsoncpp_static)
+elseif(TARGET jsoncpp_lib_static AND NOT TARGET jsoncpp_lib)
     add_library(jsoncpp_lib INTERFACE)
     target_link_libraries(jsoncpp_lib INTERFACE jsoncpp_lib_static)
 endif ()

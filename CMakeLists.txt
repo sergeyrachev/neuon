@@ -1,11 +1,13 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.17)
 cmake_policy(PUSH)
-cmake_policy(VERSION 3.12)
+cmake_policy(VERSION 3.17)
 
 enable_testing()
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_CURRENT_SOURCE_DIR}/depends/sdk/cmake")
 include(depends/sdk/cmake/version.cmake)
+configure_version(neuon)
+configure_birthday(neuon)
 
 project(neuon VERSION ${version} LANGUAGES CXX)
 message(STATUS "Build ${PROJECT_NAME}-${version_revision} at ${birthday} on ${CMAKE_SYSTEM_NAME}")

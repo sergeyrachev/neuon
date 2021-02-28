@@ -1,4 +1,0 @@
-#include "version.h"
-
-const std::string version = "@version_revision@";
-

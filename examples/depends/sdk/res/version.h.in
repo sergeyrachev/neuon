@@ -1,0 +1,7 @@
+#pragma once
+
+#include <string>
+
+namespace @symbols_space_name@{
+    extern const std::string version;
+}

@@ -1,7 +1,7 @@
 FROM archlinux:latest
 LABEL version="@version_revision@"
 
-RUN pacman -Syy --noconfirm ffmpeg cblas blas lapack boost base-devel cmake tensorflow
+RUN pacman -Syy --noconfirm ffmpeg cblas blas lapack boost base-devel cmake tensorflow libffi
 
 ADD ./neuon-*-runtime.tar.gz /
 ADD ./neuon-*-devel.tar.gz /

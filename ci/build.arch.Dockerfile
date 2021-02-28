@@ -13,6 +13,7 @@ RUN pacman --noconfirm -S blas lapack cblas
 RUN pacman --noconfirm -S tensorflow
 RUN pacman --noconfirm -S jsoncpp
 RUN pacman --noconfirm -S ninja
+RUN pacman --noconfirm -S libffi
 
 RUN useradd -m -g users -s /bin/bash user
 USER user

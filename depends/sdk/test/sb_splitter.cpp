@@ -15,7 +15,7 @@
 int main(int argc, char *argv[]) {
     std::string media_filename;
 
-    std::cout << std::string(argv[0]) << " :: " << version << " :: " << birthday << std::endl;
+    std::cout << std::string(argv[0]) << " :: " << mementor::version << " :: " << mementor::birthday << std::endl;
     namespace po = boost::program_options;
     po::options_description opt_desc("Options");
     opt_desc.add_options()

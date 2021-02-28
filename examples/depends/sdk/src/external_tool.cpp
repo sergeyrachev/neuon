@@ -1,7 +1,5 @@
 #include "external_tool.h"
 
-#include "logging_macro.h"
-
 #include <algorithm>
 #include <iterator>
 #include <iostream>
@@ -14,24 +12,12 @@
 
 using namespace posix;
 
-namespace {
-    void print(const std::string& exec, const std::vector<std::string>& args) {
-
-        std::stringstream ss;
-        ss << "Run tool '" << exec << "' cmdline: " << exec << " ";
-        std::copy(args.begin(), args.end(), std::ostream_iterator<std::string>(ss, " "));
-        debuglog() << ss.str() ;
-    }
-}
-
 external_tool_t::external_tool_t(const std::string &exec)
     : exec(exec)
 {
 }
 
 external_tool_t::exit_status_t external_tool_t::execute(const std::vector<std::string> &args, int pipe) {
-    print(exec, args);
-
     exit_status_t ret{};
     int status(0);
 

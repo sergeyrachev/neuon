@@ -3,9 +3,12 @@ LABEL version="@version_revision@"
 
 RUN apt-get update -y
 RUN apt-get install -y build-essential
-RUN apt-get install -y cmake
 RUN apt-get install -y gcc g++
 RUN apt-get install -y make
+RUN apt-get install -y wget
+
+RUN wget -P /tmp https://github.com/Kitware/CMake/releases/download/v3.18.4/cmake-3.18.4-Linux-x86_64.tar.gz
+RUN tar -C /usr/local --strip-component=1 -xzf /tmp/cmake-3.18.4-Linux-x86_64.tar.gz
 
 COPY ./neuon-*-runtime.deb /tmp/neuon/dist/
 COPY ./neuon-*-devel.deb /tmp/neuon/dist/

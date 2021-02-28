@@ -52,3 +52,12 @@ Full cycle to maintain a project:
     
 
 
+## Windows Env
+
+Prereq: python3, cmake, git, 7zip, wget, VS2019 Community for C++
+```shell
+
+b2 -j8 link=static threading=multi variant=release toolset=msvc-16.0 --build-type=complete runtime-link=shared --prefix=d:\work\env\boost\1.72\stage --build-dir=d:\work\env\boost\1.72\build --layout=tagged architecture=x86 address-model=64 install
+
+
+```

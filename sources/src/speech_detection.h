@@ -3,6 +3,8 @@
 #include "aquila/transform.h"
 #include "aquila/source.h"
 
+#include "configuration.h"
+
 #include <vector>
 #include <cassert>
 #include <chrono>
@@ -19,7 +21,8 @@ namespace neuon {
             , window(window)
             , overlap(overlap)
             , feature_count(feature_count)
-            , sample_count(std::chrono::duration_cast<std::chrono::seconds>(sample_rate * window).count())
+            //, sample_count(std::chrono::duration_cast<std::chrono::seconds>(sample_rate * window).count())
+            , sample_count(neuon::fft_samples_per_entry)
             , released_samples_count(std::chrono::duration_cast<std::chrono::seconds>(sample_rate * (window - overlap)).count())
             , mfcc(sample_count) {
 

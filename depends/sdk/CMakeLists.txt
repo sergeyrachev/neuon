@@ -1,11 +1,16 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.17)
 ENABLE_TESTING()
 
-cmake_policy(VERSION 3.12)
+cmake_policy(VERSION 3.17)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(cmake/version.cmake)
+configure_version(mementor)
+configure_birthday(mementor)
+
+include(cmake/export.cmake)
+configure_export(MEMENTOR mementor)
 
 project(mementor VERSION ${version})
 message(STATUS "Build ${PROJECT_NAME}-${version_revision} at ${birthday} on ${CMAKE_SYSTEM_NAME}")
@@ -16,9 +21,6 @@ find_package(CURL)
 find_package(spdlog)
 find_package(GTest 1.8 CONFIG REQUIRED COMPONENTS gtest gmock gmock_main )
 include(GoogleTest)
-
-configure_file(src/version.cpp.in version.cpp)
-configure_file(src/birthday.cpp.in birthday.cpp)
 
 if(CURL_FOUND)
     add_library(curl OBJECT src/curl)
@@ -72,7 +74,7 @@ if(Boost_FOUND)
     gtest_discover_tests(ut_options)
 endif()
 
-if(NOT ${CMAKE_HOST_WIN32} AND Boost_FOUND AND spdlog_FOUND)
+if(NOT CMAKE_HOST_WIN32 AND Boost_FOUND AND spdlog_FOUND)
     add_library(external_tool OBJECT src/external_tool.cpp)
     target_link_libraries(external_tool PUBLIC Boost::filesystem spdlog::spdlog)
     add_executable(ut_external_tool
@@ -95,9 +97,9 @@ if(Boost_FOUND AND FFMPEG_FOUND)
         src/options.cpp
         src/access_unit_adapter.cpp
         src/track_adapter.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/version.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/birthday.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/version.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/birthday.cpp
         )
-    target_include_directories(sb_splitter PRIVATE src/)
+    target_include_directories(sb_splitter PRIVATE src/ ${CMAKE_CURRENT_BINARY_DIR}/generated)
     target_link_libraries(sb_splitter PRIVATE spdlog::spdlog Boost::program_options Boost::dynamic_linking  Boost::headers FFMPEG::avutil FFMPEG::avformat FFMPEG::avcodec FFMPEG::swscale FFMPEG::swresample)
 endif()

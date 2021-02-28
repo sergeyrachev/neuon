@@ -1,8 +1,11 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.17)
 cmake_policy(PUSH)
-cmake_policy(VERSION 3.16)
+cmake_policy(VERSION 3.17)
 
 include(../depends/sdk/cmake/version.cmake)
+configure_version(neuon)
+configure_birthday(neuon)
+
 include(GNUInstallDirs)
 
 project(neuon-library VERSION ${version} LANGUAGES CXX)
@@ -26,12 +29,9 @@ if (NOT Python3_FOUND)
     message(WARNING "Manually set python path to ${Python3_EXECUTABLE} as it was not found automatically")
 endif ()
 
-configure_file(../depends/sdk/src/version.cpp.in version.cpp)
-configure_file(../depends/sdk/src/birthday.cpp.in birthday.cpp)
-
 add_executable(neuon-data
-    ${CMAKE_CURRENT_BINARY_DIR}/version.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/birthday.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/version.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/birthday.cpp
     src/demo.cpp
     src/neuon_data.cpp
     src/license.cpp
@@ -51,13 +51,15 @@ target_link_libraries(neuon-data PRIVATE Aquila::Aquila dlib::dlib Threads::Thre
 target_compile_features(neuon-data PRIVATE cxx_std_17)
 set_target_properties(neuon-data PROPERTIES INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
 target_include_directories(neuon-data
-    PRIVATE src/ ../depends/sdk/src
+    PRIVATE src/
+    ../depends/sdk/src
+    ${CMAKE_CURRENT_BINARY_DIR}/generated
     )
 install(TARGETS neuon-data DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT internal)
 
 add_library(neuon
-    ${CMAKE_CURRENT_BINARY_DIR}/version.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/birthday.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/version.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/birthday.cpp
     src/license.cpp
     src/model.cpp
     src/tensorflow_api.cpp
@@ -67,20 +69,23 @@ add_library(neuon
     src/neuon_cxx.cpp
     src/demo.cpp
     src/configuration.cpp
+    src/speech_detection.cpp
+    src/face_detection.cpp
+    src/log.cpp
     )
 add_library(neuon::neuon ALIAS neuon)
-target_link_libraries(neuon PRIVATE Threads::Threads JsonCpp::JsonCpp Boost::headers Aquila::Aquila dlib::dlib Tensorflow::Tensorflow Boost::filesystem spdlog::spdlog PUBLIC neuon::headers  )
+target_link_libraries(neuon PRIVATE Threads::Threads JsonCpp::JsonCpp Boost::headers Aquila::Aquila dlib::dlib Tensorflow::Tensorflow Boost::filesystem spdlog::spdlog PUBLIC neuon::headers )
 target_compile_features(neuon PRIVATE cxx_std_17)
-target_link_options(neuon PRIVATE "-Wl,--as-needed")
-target_compile_options(neuon PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
-target_compile_definitions(neuon PRIVATE BOOST_UBLAS_INLINE= NEUON_ORIGINAL_BUILD )
+set_target_properties(neuon PROPERTIES CXX_EXTENSIONS OFF)
 set_target_properties(neuon PROPERTIES INSTALL_RPATH "$ORIGIN")
 set_target_properties(neuon PROPERTIES C_VISIBILITY_PRESET hidden)
 set_target_properties(neuon PROPERTIES CXX_VISIBILITY_PRESET hidden)
 set_target_properties(neuon PROPERTIES VISIBILITY_INLINES_HIDDEN On)
+target_compile_definitions(neuon PRIVATE BOOST_UBLAS_INLINE= NEUON_ORIGINAL_BUILD )
 target_include_directories(neuon
     PRIVATE src/
     ../depends/sdk/src
+    ${CMAKE_CURRENT_BINARY_DIR}/generated
     )
 
 install(TARGETS neuon EXPORT neuon-library

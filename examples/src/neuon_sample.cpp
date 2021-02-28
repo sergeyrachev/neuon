@@ -7,6 +7,8 @@
 
 #include "neuon/neuon_c.h"
 
+#include "spdlog/spdlog.h"
+
 #include <chrono>
 #include <iostream>
 #include <iomanip>
@@ -20,7 +22,7 @@ void print_result(neuon_user_data_t* user_data, const neuon_outcome_t *result) {
     static uint64_t counter = 0;
     std::cout << "#" << std::setw(10) << counter++
         << " pts= "<< std::setw(10) << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::microseconds(result->pts)).count()
-        << " metric= " << std::setw(10) << result->mismatch_percentage << std::endl;
+        << " sync loss metric= " << std::setw(10) << result->mismatch_percentage << std::endl;
     statistic_t& statistic = *reinterpret_cast<statistic_t*>(user_data->opaque);
     if(result->mismatch_percentage > 0.5){
         statistic.nosync_samples++;
@@ -30,15 +32,15 @@ void print_result(neuon_user_data_t* user_data, const neuon_outcome_t *result) {
 };
 
 void log_error(neuon_logging_t *log, const char *str){
-
+    SPDLOG_ERROR(str);
 }
 
 void log_info(neuon_logging_t *log, const char *str) {
-
+    SPDLOG_INFO(str);
 }
 
 void log_debug(neuon_logging_t *log, const char *str) {
-
+    SPDLOG_DEBUG(str);
 }
 
 int main(int argc, char **argv) {
@@ -49,7 +51,7 @@ int main(int argc, char **argv) {
     std::string face_landmark_db_filename("shape_predictor_68_face_landmarks.dat");
     std::string license_filename("neuon.key");
 
-    std::cout << "neuon-example :: " << version << " :: " << birthday << std::endl;
+    std::cout << "neuon-sample :: " << neuon_sample::version << " :: " << neuon_sample::birthday << std::endl;
     namespace po = boost::program_options;
     po::options_description opt_desc("Options");
     opt_desc.add_options()
@@ -101,12 +103,16 @@ int main(int argc, char **argv) {
 
     neuon.reset(neuon_create_engine(model_filename.c_str(), norma_filename.c_str(), face_landmark_db_filename.c_str(), license_filename.c_str(), &options, &logging, &user_data));
 
+    if(!neuon){
+        return EXIT_FAILURE;
+    }
+
     threads::interruption_t interruption;
     posix::sighandler_t<SIGINT>::assign([&interruption](int signal) { interruption.interrupt(); });
     posix::sighandler_t<SIGTERM>::assign([&interruption](int signal) { interruption.interrupt(); });
 
     extraction.src->run(interruption);
 
-    std::cout << "Checked " << statistic.sync_samples + statistic.nosync_samples << " data samples " << "The stream has " << ((statistic.sync_samples < statistic.nosync_samples) ? "no " : "") << "A/V sync " << "(S:" << statistic.sync_samples << ", N:" <<statistic.nosync_samples << ")";
-    return 0;
+    std::cout << "Checked " << statistic.sync_samples + statistic.nosync_samples << " data samples " << "The stream has " << ((statistic.sync_samples < statistic.nosync_samples) ? "no " : "") << "A/V sync " << "(S:" << statistic.sync_samples << ", N:" << statistic.nosync_samples << ")" << std::endl;
+    return EXIT_SUCCESS;
 }

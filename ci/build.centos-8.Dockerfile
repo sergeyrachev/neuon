@@ -9,7 +9,6 @@ RUN yum -y install git
 RUN yum -y install gcc gcc-c++
 RUN yum -y install make
 RUN yum -y install which
-RUN yum -y install cmake
 RUN yum -y install rpm-build
 RUN yum -y install python3 python3-pip
 RUN yum -y install pkgconfig

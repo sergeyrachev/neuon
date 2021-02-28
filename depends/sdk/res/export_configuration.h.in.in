@@ -1,51 +1,51 @@
 #pragma once
 
-@CMAKE_DEFINE@ @API_NAME@_SHARED_LIBRARY
+@CMAKE_DEFINE@ @SYMBOLS_SPACE_NAME@_SHARED_LIBRARY
 
-#if defined(@API_NAME@_ORIGINAL_BUILD)
-    #ifdef @API_NAME@_SHARED_LIBRARY
+#if defined(@SYMBOLS_SPACE_NAME@_ORIGINAL_BUILD)
+    #ifdef @SYMBOLS_SPACE_NAME@_SHARED_LIBRARY
         #if defined _WIN32 || defined __CYGWIN__
             #ifdef __GNUC__
-                #define @API_NAME@_PUBLIC __attribute__ ((dllexport))
-                #define @API_NAME@_LOCAL
+                #define @SYMBOLS_SPACE_NAME@_PUBLIC __attribute__ ((dllexport))
+                #define @SYMBOLS_SPACE_NAME@_LOCAL
             #else // MSVC
-                #define @API_NAME@_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
-                #define @API_NAME@_LOCAL
+                #define @SYMBOLS_SPACE_NAME@_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+                #define @SYMBOLS_SPACE_NAME@_LOCAL
             #endif
         #else // *nix SO build
             #if __GNUC__ >= 4
-                #define @API_NAME@_PUBLIC __attribute__ ((visibility ("default")))
-                #define @API_NAME@_LOCAL  __attribute__ ((visibility ("hidden")))
+                #define @SYMBOLS_SPACE_NAME@_PUBLIC __attribute__ ((visibility ("default")))
+                #define @SYMBOLS_SPACE_NAME@_LOCAL  __attribute__ ((visibility ("hidden")))
             #else // Unknown compiler
-                #define @API_NAME@_PUBLIC
-                #define @API_NAME@_LOCAL
+                #define @SYMBOLS_SPACE_NAME@_PUBLIC
+                #define @SYMBOLS_SPACE_NAME@_LOCAL
             #endif
         #endif
     #else // Static library
-        #define @API_NAME@_PUBLIC
-        #define @API_NAME@_LOCAL
+        #define @SYMBOLS_SPACE_NAME@_PUBLIC
+        #define @SYMBOLS_SPACE_NAME@_LOCAL
     #endif
 #else // User-side build
-    #ifdef @API_NAME@_SHARED_LIBRARY
+    #ifdef @SYMBOLS_SPACE_NAME@_SHARED_LIBRARY
         #if defined _WIN32 || defined __CYGWIN__
             #ifdef __GNUC__
-                #define @API_NAME@_PUBLIC __attribute__ ((dllimport))
-                #define @API_NAME@_LOCAL
+                #define @SYMBOLS_SPACE_NAME@_PUBLIC __attribute__ ((dllimport))
+                #define @SYMBOLS_SPACE_NAME@_LOCAL
             #else // MSVC
-                #define @API_NAME@_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
-                #define @API_NAME@_LOCAL
+                #define @SYMBOLS_SPACE_NAME@_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+                #define @SYMBOLS_SPACE_NAME@_LOCAL
             #endif
         #else
             #if __GNUC__ >= 4
-                #define @API_NAME@_PUBLIC __attribute__ ((visibility ("default")))
-                #define @API_NAME@_LOCAL  __attribute__ ((visibility ("hidden")))
+                #define @SYMBOLS_SPACE_NAME@_PUBLIC __attribute__ ((visibility ("default")))
+                #define @SYMBOLS_SPACE_NAME@_LOCAL  __attribute__ ((visibility ("hidden")))
             #else // Unknown compiler
-                #define @API_NAME@_PUBLIC
-                #define @API_NAME@_LOCAL
+                #define @SYMBOLS_SPACE_NAME@_PUBLIC
+                #define @SYMBOLS_SPACE_NAME@_LOCAL
             #endif
         #endif
     #else // Static library
-        #define @API_NAME@_PUBLIC
-        #define @API_NAME@_LOCAL
+        #define @SYMBOLS_SPACE_NAME@_PUBLIC
+        #define @SYMBOLS_SPACE_NAME@_LOCAL
     #endif
 #endif

@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.17)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_CURRENT_SOURCE_DIR}/depends/sdk/cmake")
-include(${CMAKE_CURRENT_SOURCE_DIR}/depends/sdk/cmake/version.cmake)
+include(depends/sdk/cmake/version.cmake)
+configure_version(neuon_sample)
+configure_birthday(neuon_sample)
 
 project(neuon-sample VERSION ${version})
 message(STATUS "Build ${PROJECT_NAME}-${version_revision} at ${birthday} on ${CMAKE_SYSTEM_NAME}")
@@ -15,12 +17,9 @@ if(NOT TARGET neuon::neuon)
     find_package(Neuon REQUIRED COMPONENTS headers neuon)
 endif()
 
-configure_file(depends/sdk/src/version.cpp.in version.cpp)
-configure_file(depends/sdk/src/birthday.cpp.in birthday.cpp)
-
 add_executable(neuon-sample
-    ${CMAKE_CURRENT_BINARY_DIR}/version.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/birthday.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/version.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/birthday.cpp
     src/neuon_sample.cpp
     depends/sdk/src/extraction.cpp
     depends/sdk/src/options.cpp
@@ -34,9 +33,11 @@ add_executable(neuon-sample
     )
 target_link_libraries(neuon-sample PRIVATE spdlog::spdlog Threads::Threads Boost::program_options FFMPEG::avcodec FFMPEG::avformat FFMPEG::swscale FFMPEG::swresample neuon::neuon)
 target_compile_features(neuon-sample PRIVATE cxx_std_11)
+set_target_properties(neuon-sample PROPERTIES CXX_EXTENSIONS OFF)
 target_include_directories(neuon-sample
     PRIVATE src/
     depends/sdk/src
+    ${CMAKE_CURRENT_BINARY_DIR}/generated
     )
 
 include(GNUInstallDirs)

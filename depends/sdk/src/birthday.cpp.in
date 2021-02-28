@@ -1,3 +1,0 @@
-#include "birthday.h"
-
-const std::string birthday = "@birthday@";

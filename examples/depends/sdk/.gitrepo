@@ -6,7 +6,7 @@
 [subrepo]
 	remote = git@github.com:sergeyrachev/mementor.git
 	branch = master
-	commit = c2af9d1e9fb6737fa258cd97e7a9edb31a3ea6c4
-	parent = ce9a5e3719409a291272be9eedf1cc86212f635a
+	commit = 62ccd0ca8453aee5ff55a0dee0f5f1e0019bfc82
+	parent = 038100210a921e459c6aef582ebd431d83ae0792
 	method = rebase
 	cmdver = 0.4.1
