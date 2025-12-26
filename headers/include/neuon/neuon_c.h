@@ -1,6 +1,6 @@
 #pragma once
 
-#include "neuon/export_configuration.h"
+#include "neuon/export.h"
 
 #include <cstdlib>
 #include <cstdint>

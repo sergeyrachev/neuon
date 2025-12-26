@@ -1,17 +1,28 @@
-cmake_minimum_required(VERSION 3.17)
-cmake_policy(PUSH)
-cmake_policy(VERSION 3.17)
+cmake_minimum_required(VERSION 3.28)
 
-include(../depends/sdk/cmake/version.cmake)
-configure_version(neuon)
-configure_birthday(neuon)
+include(FetchContent)
+FetchContent_Declare(
+    mementor
+    GIT_REPOSITORY  https://gitlab.com/sergeyrachev/mementor.git
+)
+FetchContent_MakeAvailable(mementor)
+list(APPEND CMAKE_MODULE_PATH "${MEMENTOR_MODULE_PATH}")
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+include(GenerateSemanticVersionHeader)
+set_semantic_version_variables(NAMESPACE neuon)
+generate_semantic_version_header(NAMESPACE neuon)
+
+project(neuon-library VERSION ${NEUON_VERSION} LANGUAGES CXX)
 include(GNUInstallDirs)
-
-project(neuon-library VERSION ${version} LANGUAGES CXX)
 
 if (NOT TARGET neuon::headers)
     find_package(neuon REQUIRED COMPONENTS headers)
+endif()
+
+if (NOT TARGET mementor::mementor)
+    find_package(mementor REQUIRED)
 endif()
 
 find_package(Threads REQUIRED)
@@ -26,77 +37,110 @@ find_package(Python3 COMPONENTS Interpreter)
 if (NOT Python3_FOUND)
     option(NEUON_PYTHON_EXECUTABLE "Set to Python 3 executable path" /usr/bin/python3)
     set(Python3_EXECUTABLE ${NEUON_PYTHON_EXECUTABLE})
-    message(WARNING "Manually set python path to ${Python3_EXECUTABLE} as it was not found automatically")
+    message(ERROR "Manually set python path to ${Python3_EXECUTABLE} as it was not found automatically")
 endif ()
 
-add_executable(neuon-data
-    ${CMAKE_CURRENT_BINARY_DIR}/generated/version.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/generated/birthday.cpp
-    src/demo.cpp
-    src/neuon_data.cpp
-    src/license.cpp
-    ../depends/sdk/src/extraction.cpp
-    ../depends/sdk/src/source.cpp
-    ../depends/sdk/src/demuxer.cpp
-    ../depends/sdk/src/decoder.cpp
-    ../depends/sdk/src/interruption.cpp
-    ../depends/sdk/src/track_adapter.cpp
-    ../depends/sdk/src/access_unit_adapter.cpp
-    ../depends/sdk/src/resample.cpp
-    ../depends/sdk/src/options.cpp
-    src/neuon_cxx.cpp
-    src/configuration.cpp
-    )
-target_link_libraries(neuon-data PRIVATE Aquila::Aquila dlib::dlib Threads::Threads Boost::program_options Boost::headers FFMPEG::avcodec FFMPEG::avformat FFMPEG::swscale FFMPEG::swresample spdlog::spdlog)
+add_executable(neuon-data)
+target_sources(neuon-data
+    PRIVATE
+        src/demo.cpp
+        src/neuon_data.cpp
+        src/license.cpp
+        src/neuon_cxx.cpp
+        src/configuration.cpp
+)
+target_link_libraries(neuon-data
+    PRIVATE
+        Aquila::Aquila
+        dlib::dlib
+        Threads::Threads
+        neuon-version-header
+        mementor::splitter
+        mementor::options
+        mementor::interruption
+)
 target_compile_features(neuon-data PRIVATE cxx_std_17)
 set_target_properties(neuon-data PROPERTIES INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
 target_include_directories(neuon-data
     PRIVATE src/
-    ../depends/sdk/src
-    ${CMAKE_CURRENT_BINARY_DIR}/generated
-    )
+)
 install(TARGETS neuon-data DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT internal)
 
-add_library(neuon
-    ${CMAKE_CURRENT_BINARY_DIR}/generated/version.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/generated/birthday.cpp
-    src/license.cpp
-    src/model.cpp
-    src/tensorflow_api.cpp
-    src/tensorflow_dynamic.cpp
-    src/tensorflow_static.cpp
-    src/neuon_c.cpp
-    src/neuon_cxx.cpp
-    src/demo.cpp
-    src/configuration.cpp
-    src/speech_detection.cpp
-    src/face_detection.cpp
-    src/log.cpp
-    )
+include(GenerateSymbolExportHeader)
+generate_symbol_export_header(NAMESPACE neuon AS_FOR_SHARED_LIBRARY ${BUILD_SHARED_LIBS})
+
+add_library(neuon)
 add_library(neuon::neuon ALIAS neuon)
-target_link_libraries(neuon PRIVATE Threads::Threads JsonCpp::JsonCpp Boost::headers Aquila::Aquila dlib::dlib Tensorflow::Tensorflow Boost::filesystem spdlog::spdlog PUBLIC neuon::headers )
+target_sources(neuon
+    PRIVATE
+        src/license.cpp
+        src/model.cpp
+        src/tensorflow_api.cpp
+        src/tensorflow_dynamic.cpp
+        src/tensorflow_static.cpp
+        src/neuon_c.cpp
+        src/neuon_cxx.cpp
+        src/demo.cpp
+        src/configuration.cpp
+        src/speech_detection.cpp
+        src/face_detection.cpp
+        src/log.cpp
+)
+target_link_libraries(neuon
+        PRIVATE
+        Threads::Threads
+        JsonCpp::JsonCpp
+        Aquila::Aquila
+        dlib::dlib
+        Tensorflow::Tensorflow
+        Boost::filesystem
+        neuon-export-macro
+        neuon-version-header
+        PUBLIC
+        neuon::headers
+        neuon-export-header
+)
 target_compile_features(neuon PRIVATE cxx_std_17)
 set_target_properties(neuon PROPERTIES CXX_EXTENSIONS OFF)
 set_target_properties(neuon PROPERTIES INSTALL_RPATH "$ORIGIN")
 set_target_properties(neuon PROPERTIES C_VISIBILITY_PRESET hidden)
 set_target_properties(neuon PROPERTIES CXX_VISIBILITY_PRESET hidden)
 set_target_properties(neuon PROPERTIES VISIBILITY_INLINES_HIDDEN On)
-target_compile_definitions(neuon PRIVATE BOOST_UBLAS_INLINE= NEUON_ORIGINAL_BUILD )
+target_compile_definitions(neuon PRIVATE BOOST_UBLAS_INLINE= )
 target_include_directories(neuon
     PRIVATE src/
-    ../depends/sdk/src
-    ${CMAKE_CURRENT_BINARY_DIR}/generated
-    )
+)
 
-install(TARGETS neuon EXPORT neuon-library
+install(
+    FILES cmake/FindTensorflow.cmake
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/neuon/cmake/
+    COMPONENT devel
+)
+
+install(
+    TARGETS neuon neuon-version-header neuon-export-header neuon-export-macro
+    EXPORT neuon-library
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel NAMELINK_COMPONENT devel
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime
-    OBJECTS DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
-install(EXPORT neuon-library NAMESPACE neuon:: DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/neuon/cmake FILE neuon-targets.cmake COMPONENT devel)
-install(FILES res/model.pb res/normale.json res/shape_predictor_68_face_landmarks.dat DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/neuon/res COMPONENT runtime)
+    FILE_SET headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT devel
+)
+install(
+    EXPORT neuon-library
+    NAMESPACE neuon::
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/neuon/cmake
+    FILE neuon-targets.cmake
+    COMPONENT devel
+)
+install(
+    FILES
+        res/model.pb
+        res/normale.json
+        res/shape_predictor_68_face_landmarks.dat
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/neuon/res
+    COMPONENT runtime
+)
 
 set(NEUON_PACKAGE_LOCATION "${CMAKE_CURRENT_LIST_DIR}/src/gym")
 configure_file(src/gym/setup.py.in gym/setup.py @ONLY)
@@ -109,5 +153,3 @@ add_custom_target(neuon-details-package ALL ${Python3_EXECUTABLE} setup.py bdist
 set(NEUON_PACKAGE_LOCATION "${CMAKE_CURRENT_LIST_DIR}/src/show")
 configure_file(src/show/setup.py.in show/setup.py @ONLY)
 add_custom_target(neuon-show-package ALL ${Python3_EXECUTABLE} setup.py bdist_wheel --dist-dir ${CMAKE_CURRENT_BINARY_DIR} WORKING_DIRECTORY show)
-
-cmake_policy(POP)

@@ -1,5 +1,7 @@
 #include "neuon/neuon_c.h"
 
+#include "neuon/version.h"
+
 #include "neuon_cxx.h"
 #include "configuration.h"
 
@@ -12,7 +14,7 @@
 #include "license.h"
 #include "demo.h"
 #include "log.h"
-#include "birthday.h"
+
 
 #include <boost/filesystem.hpp>
 

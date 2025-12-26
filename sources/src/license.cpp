@@ -1,6 +1,7 @@
 #include "license.h"
 
 #include <algorithm>
+#include <cstdint>
 
 common::license_t::license_t(const std::string& payload) {
     static const uint8_t mask = 0x09;

@@ -53,10 +53,9 @@ int main(int argc, char **argv){
 
     common::license_t license(license_payload);
     if(license.demo()){
-        try{
-            common::demo_t demo;
-        } catch (const common::demo_exception_t & e ){
-            std::cerr << e.what() << std::endl;
+        common::demo_t demo(neuon::birthday);
+        if(demo.has_expired){
+            std::cerr << "Demo time period limit exceeded! Please contact the seller." << std::endl;
             return 1;
         }
     }

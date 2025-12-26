@@ -1,7 +1,7 @@
 import setuptools
 
 name = "neuon-details"
-version = "@version_revision@"
+version = "@NEUON_VERSION@"
 where = "@NEUON_PACKAGE_LOCATION@"
 description = ""
 
@@ -39,5 +39,3 @@ setuptools.setup(
         "toolz"
     ]
 )
-
-

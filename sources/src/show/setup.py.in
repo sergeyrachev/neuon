@@ -1,7 +1,7 @@
 import setuptools
 
 name = "neuon-show"
-version = "@version_revision@"
+version = "@NEUON_VERSION@"
 where = "@NEUON_PACKAGE_LOCATION@"
 description = ""
 
@@ -42,5 +42,3 @@ setuptools.setup(
         ]
     }
 )
-
-

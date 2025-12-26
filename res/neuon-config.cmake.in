@@ -3,16 +3,13 @@ cmake_policy(VERSION 3.10)
 
 @PACKAGE_INIT@
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 
 include(CMakeFindDependencyMacro)
 find_dependency(Tensorflow)
 
 include ( "${CMAKE_CURRENT_LIST_DIR}/neuon-headers-targets.cmake" )
 include ( "${CMAKE_CURRENT_LIST_DIR}/neuon-targets.cmake" )
-
-check_required_components(headers)
-check_required_components(neuon)
 
 list(REMOVE_AT CMAKE_MODULE_PATH -1)
 

@@ -1,5 +1,0 @@
-#include "version.h"
-
-namespace @symbols_space_name@{
-    const std::string version = "@version_revision@";
-}

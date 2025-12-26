@@ -1,5 +1,0 @@
-#include "birthday.h"
-
-namespace @symbols_space_name@{
-    const std::string birthday = "@birthday@";
-}

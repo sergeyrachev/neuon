@@ -1,11 +1,10 @@
-#include "version.h"
-#include "birthday.h"
-#include "options.h"
-#include "interruption.h"
-#include "sighandler.h"
-#include "extraction.h"
-
 #include "neuon/neuon_c.h"
+#include "mementor/options.h"
+#include "mementor/interruption.h"
+#include "mementor/sighandler.h"
+#include "mementor/extraction.h"
+
+#include "neuon_example/version.h"
 
 #include "spdlog/spdlog.h"
 
@@ -51,7 +50,7 @@ int main(int argc, char **argv) {
     std::string face_landmark_db_filename("shape_predictor_68_face_landmarks.dat");
     std::string license_filename("neuon.key");
 
-    std::cout << "neuon-sample :: " << neuon_sample::version << " :: " << neuon_sample::birthday << std::endl;
+    std::cout << "neuon-sample :: " << neuon_example::version << " :: " << neuon_example::birthday << std::endl;
     namespace po = boost::program_options;
     po::options_description opt_desc("Options");
     opt_desc.add_options()
